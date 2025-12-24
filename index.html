@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Carcassonne Score Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
+    <style>
+        /* ---- THEME ---- */
+        :root {
+            --bg: #f3e8d1;
+            /* parchment */
+            --card-bg: #efe1c3;
+            --card-bg-alt: #e4d2ad;
+            --accent: #8b5a2b;
+            /* wood brown */
+            --accent-soft: rgba(139, 90, 43, 0.15);
+            --text-main: #ffffff;
+            --text-soft: #7f6b52;
+            --border-subtle: #c8b08a;
+            --btn-bg: #d6c29b;
+            --btn-border: #b89b6d;
+            --btn-hover: #c3a877;
+            --btn-danger: #8a2e2e;
+            --radius-lg: 14px;
+            --radius-pill: 999px;
+            --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.25);
+        }
+
+        #app-root {
+            position: relative;
+            z-index: 1;
+            padding: 16px;
+        }
+
+        /* ---- BASIC ---- */
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-size: 18px;
+            /* overflow: hidden; 🔑 prevent phantom scrollbar */
+        }
+
+        body {
+            margin: 0;
+            padding: 0px;
+            font-family: system-ui, sans-serif;
+            color: var(--text-main);
+
+            position: relative;
+            z-index: 0;
+
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+
+            /* LIGHT MODE (default) */
+            background-image: url("/images/ChatGPT Image 23.12.2025 klo 16.48.59.png");
+
+            transition: background-image 0.99s ease;
+        }
+
+        /* DARK MODE BACKGROUND ONLY */
+        body[data-theme="dark"] {
+            background-image: url("/images/ChatGPT Image 23.12.2025 klo 16.56.11.png");
+        }
+
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(1px) saturate(100%);
+            -webkit-backdrop-filter: blur(1px) saturate(100%);
+
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+
+            background: rgba(0, 0, 0, 0);
+            pointer-events: none;
+            z-index: -1;
+
+            transition: background 0.99s ease;
+        }
+
+        /* Dark mode fade overlay */
+        body[data-theme="dark"]::after {
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+
+        h1 {
+            text-align: center;
+            font-size: 38px;
+            letter-spacing: 0.04em;
+            margin: 14px 0px 0px;
+            margin-bottom: 0px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 16px;
+            color: var(--text-soft);
+            margin-bottom: 6px;
+        }
+
+        #app {
+            margin: 0 auto;
+            transition: max-width 0.25s ease;
+        }
+
+        #controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        #controls button {
+            font-size: 18px;
+            padding: 10px 18px;
+        }
+
+        /* ---- BUTTONS ---- */
+        button {
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--btn-border);
+            background: var(--btn-bg);
+            color: var(--text-main);
+            padding: 8px 16px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.12s ease;
+        }
+
+        button:hover {
+            background: var(--btn-hover);
+        }
+
+
+        /* ---- PLAYER HEADER (card) ---- */
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .player-card {
+            --wood-base: #b08968;
+            /* fallback */
+            --wood-dark: #8a5a2b;
+            background: radial-gradient(circle at top, var(--card-bg-alt), var(--card-bg) 60%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-subtle);
+            padding: 6px;
+            margin-bottom: 5px;
+            box-shadow: var(--shadow-soft);
+            background:
+                url("https://www.transparenttextures.com/patterns/wood-pattern.png"),
+                linear-gradient(180deg,
+                    var(--wood-base),
+                    var(--wood-dark));
+
+            border: 2px solid color-mix(in srgb, var(--wood-dark), black 20%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
+                0 6px 14px rgba(0, 0, 0, 0.25);
+
+            background-blend-mode: multiply;
+            filter: saturate(0.90) brightness(0.95);
+        }
+
+
+        .player-card.open {
+            filter: saturate(1.05) contrast(1.05);
+        }
+
+
+        .player-name {
+            font-size: 40px;
+            font-weight: 700;
+            flex: 1;
+            padding-left: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .score-panel {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meeple {
+            width: 64px;
+            height: 64px;
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
+        }
+
+        .score-value {
+            font-size: 80px;
+            font-weight: 900;
+            line-height: 1;
+            padding-right: 10px;
+            min-width: 60px;
+            text-align: right;
+            font-family: "Almendra SC", serif;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        /* ---- DETAILS ---- */
+        .details {
+            display: none;
+            border-top: 1px solid #1e293b;
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .chip {
+            padding: 8px 14px;
+            margin-top: 6px;
+            margin-left: 12px;
+            background: var(--btn-bg);
+            border: 1px solid var(--btn-border);
+            border-radius: 10px;
+
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        .chip input {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            min-width: 80px;
+        }
+
+        .chip input:focus {
+            outline: none;
+            /* box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4); */
+            border-radius: 6px;
+        }
+
+        .color-swatch {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+
+            border: 2px solid var(--btn-border);
+            cursor: pointer;
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-1px);
+        }
+
+        .color-swatch.active {
+            border-color: white;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+        }
+
+
+
+        .color-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+        }
+
+        .score-btn {
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 10px;
+            background: #0f172a;
+            border: 1px solid #374151;
+        }
+
+        .score-btn:hover {
+            background: #1e293b;
+        }
+
+        #settingsBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+
+            width: 48px;
+            height: 48px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 22px;
+            /* slightly larger, better balance */
+            line-height: 1;
+            /* 🔑 prevent vertical drift */
+
+            border-radius: 50%;
+            background: #1e293b;
+            border: 1px solid #475569;
+
+            padding: 0;
+            /* 🔑 remove padding */
+        }
+
+
+        #settingsPanel {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+
+            background: #0f172a;
+            border: 1px solid #334155;
+            width: 220px;
+            padding: 10px;
+            border-radius: 10px;
+
+            max-height: 70vh;
+            /* 🔑 limit height */
+            overflow-y: auto;
+            /* 🔑 enable scroll */
+
+            display: none;
+        }
+
+
+        .settings-option {
+            padding: 8px;
+            background: #1e293b;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        .settings-option:hover {
+            background: #334155;
+        }
+
+        .score-btn img {
+            display: block;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+        }
+
+        .icon-img {
+            width: 72px;
+            height: 72px;
+            pointer-events: none;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+        }
+
+        .color-picker {
+            display: flex;
+            flex-wrap: wrap;
+            /* 🔑 allow wrapping */
+            gap: 6px;
+            max-width: 180px;
+            /* 🔑 constrain width */
+        }
+
+
+        .color-swatch {
+            width: 12px;
+            height: 12px;
+            /* border-radius: 50%; */
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .color-swatch.active {
+            border-color: white;
+        }
+
+        /* black meeple exception */
+        .black-meeple .meeple {
+            filter:
+                drop-shadow(0 0 2px rgba(255, 255, 255, 0.7)) drop-shadow(0 2px 6px rgba(255, 255, 255, 0.6)) saturate(1.05) brightness(1.1);
+        }
+
+        /* Carcassonne-style numbers */
+        .score-num {
+            font-family: "Almendra SC", serif;
+            /* font-weight: 400; */
+            letter-spacing: 0.02em;
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55)) saturate(0.95) contrast(1.05);
+
+        }
+
+        .meeple {
+            filter:
+                drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55)) saturate(0.95) contrast(1.05);
+        }
+
+        .score-btn img {
+            background: #f5e6c8;
+            border: 2px solid #816a48;
+            border-radius: 6px;
+            padding: 0px;
+        }
+
+        .details {
+            border-top: 2px dashed #b89b6d;
+        }
+
+        .score-num {
+            font-size: 18px;
+            font-weight: 700;
+            min-width: 44px;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        .score-icon {
+            padding: 6px;
+        }
+
+        /* =========================
+   DARK MODE – BASIC UI
+   ========================= */
+
+        body[data-theme="dark"] .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        }
+
+        body[data-theme="dark"] #controls button {
+            background: #1e293b;
+            /* dark slate */
+            border-color: #334155;
+            color: #e5e7eb;
+        }
+
+        body[data-theme="dark"] #controls button:hover {
+            background: #334155;
+        }
+
+
+        #editBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 76px;
+            /* next to settings */
+
+            width: 48px;
+            height: 48px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 24px;
+            line-height: 1;
+
+            border-radius: 50%;
+            background: #1e293b;
+            border: 1px solid #475569;
+
+            padding: 0;
+        }
+
+        /* Active edit mode */
+        #editBtn.active {
+            background: #334155;
+            box-shadow: 0 0 0 2px #38bdf8;
+        }
+
+        /* Names & titles — REVERT */
+        .player-name,
+        h1 {
+            font-family: "IM Fell English SC", serif;
+            font-weight: 700;
+            /* 800 is too heavy for IM Fell */
+        }
+
+        .pending-score {
+            font-size: 64px;
+            font-weight: 900;
+            text-align: center;
+            min-width: 108px;
+
+            color: #38bdf8;
+            letter-spacing: 0.05em;
+
+            padding: 1px;
+            border-radius: 12px;
+
+            background: rgba(15, 23, 42, 0.65);
+            border: 2px solid rgba(56, 189, 248, 0.6);
+
+            text-shadow:
+                0 2px 6px rgba(0, 0, 0, 0.6),
+                0 0 10px rgba(56, 189, 248, 0.4);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+
+            line-height: 1;
+        }
+
+        /* Carcassonne-style numbers */
+        .score-value,
+        .pending-score {
+            font-family: "Almendra SC", serif;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            padding-bottom: 5px;
+        }
+
+        /* PERFECTLY SQUARE NUMBER BUTTONS */
+        .score-btn.score-num {
+            width: 56px;
+            height: 56px;
+            font-family: system-ui, sans-serif;
+            padding: 0;
+            /* 🔑 stop padding from inflating size */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 22px;
+            /* number size */
+            line-height: 1;
+        }
+
+        /* ALTERNATE — rounder & bolder numbers */
+        body[data-score-style="bold"] .score-value,
+        body[data-score-style="bold"] .pending-score,
+        body[data-score-style="bold"] .score-num {
+            font-family: system-ui, sans-serif;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        /* Divider inside scoring panel */
+        .details-divider {
+            margin: 14px 0 6px;
+            border-top: 2px dashed #b89b6d;
+            opacity: 0.9;
+        }
+
+        /* History label */
+        .history-title {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .row.history {
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .row.history span {
+            opacity: 0.9;
+        }
+
+        .row.history span:has(:contains("-")) {
+            opacity: 0.75;
+        }
+
+        #startGameBtn {
+            font-size: 20px;
+            padding: 12px 22px;
+            /* font-weight: 700; */
+        }
+
+        .player-card {
+            will-change: transform;
+        }
+
+        .player-card.moved {
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.6),
+                0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Carcassonne Scores</h1>
+    <div class="subtitle">Tap a player to open scoring • Add Score</div>
+
+    <div id="controls">
+        <button id="startGameBtn">▶ Start Game</button>
+        <button id="addPlayerBtn">+ Add Player</button>
+        <button id="resetBtn">Reset Game</button>
+    </div>
+
+    <div id="app">
+        <div id="playersContainer"></div>
+    </div>
+
+    <button id="editBtn" title="Edit players">✏️</button>
+    <button id="settingsBtn">⚙️</button>
+
+
+
+    <!-- ==================== -->
+    <!--    SETTINGS PANEL    -->
+    <!-- ==================== -->
+    <div id="settingsPanel">
+        <strong style="display:block; margin-bottom:6px; padding-left: 1px;">Settings</strong>
+
+        <div class="settings-option" onclick="setWidth('400px')">Compact</div>
+        <div class="settings-option" onclick="setWidth('600px')">Standard</div>
+        <div class="settings-option" onclick="setWidth('900px')">Wide</div>
+        <div class="settings-option" onclick="setWidth('100%')">Full Width</div>
+        <div class="settings-option" onclick="resetGame()">
+            🔄 Reset Game
+        </div>
+        <div class="settings-option" onclick="confirm('Resume setup mode?') && resumeSetup()">
+            ⏪ Back to Setup
+        </div>
+        <div class="settings-option" onclick="toggleScoreStyle()">
+            🔢 Numbers: <span id="scoreStyleState">Tile</span>
+        </div>
+        <div class="settings-option" onclick="toggleSound()">
+            <span id="soundIcon">🔊</span>
+            Sound: <span id="soundState">On</span>
+        </div>
+        <div class="settings-option" onclick="toggleDarkMode()">
+            🌙 Theme: <span id="themeState">Light</span>
+        </div>
+        <div class="settings-option" onclick="enterEditMode()">
+            ✏️ Edit Players
+        </div>
+    </div>
+
+
+    <script>
+        let darkMode = false;
+        let editMode = false;
+        let boldScoreStyle = false;
+        let gameStarted = false;
+
+        gameStarted = localStorage.getItem("gameStarted") === "true";
+
+
+        function toggleScoreStyle() {
+            boldScoreStyle = !boldScoreStyle;
+
+            document.body.dataset.scoreStyle = boldScoreStyle ? "bold" : "tile";
+            document.getElementById("scoreStyleState").textContent =
+                boldScoreStyle ? "Bold" : "Tile";
+
+            localStorage.setItem("scoreStyle", boldScoreStyle ? "bold" : "tile");
+        }
+
+        const cardMap = new Map();
+
+
+        const savedScoreStyle = localStorage.getItem("scoreStyle");
+        if (savedScoreStyle === "bold") {
+            boldScoreStyle = true;
+            document.body.dataset.scoreStyle = "bold";
+            document.getElementById("scoreStyleState").textContent = "Bold";
+        } else {
+            document.body.dataset.scoreStyle = "tile";
+        }
+
+        const editBtn = document.getElementById("editBtn");
+
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editMode = !editMode;
+
+            editBtn.classList.toggle("active", editMode);
+
+            // Close open player panels when switching mode
+            selectedPlayer = null;
+            render(false);
+        };
+
+        function enterEditMode() {
+            editMode = true;
+            selectedPlayer = null;
+            render(false);
+        }
+
+        function scrollPlayerIntoView(id) {
+            requestAnimationFrame(() => {
+                const card = document.querySelector(`.player-header[data-id="${id}"]`)
+                    ?.closest(".player-card");
+
+                if (!card) return;
+
+                card.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+            });
+        }
+
+
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+
+            document.body.dataset.theme = darkMode ? "dark" : "light";
+            document.getElementById("themeState").textContent =
+                darkMode ? "Dark" : "Light";
+        }
+
+        // Load on startup
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+            darkMode = true;
+            document.body.dataset.theme = "dark";
+        }
+
+        // Save on toggle
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+
+            document.body.dataset.theme = darkMode ? "dark" : "light";
+            document.getElementById("themeState").textContent =
+                darkMode ? "Dark" : "Light";
+
+            localStorage.setItem("theme", darkMode ? "dark" : "light");
+        }
+
+
+        /* ---- COLOR SET ---- */
+        const COLORS = [
+            "#FFDD00", // Yellow
+            "#D7263D", // Red
+            "#0072BB", // Blue
+            "#2ECC71", // Green
+            "#1A1A1A", // Black
+            "#d55eb2", // Pink
+            "#FF8C00", // Orange
+            "#6A0DAD", // Purple
+            "#FFFFFF", // Grey
+            "#716e73", // Grey
+            "#64cae4" // Ice
+        ];
+
+        /* ---- INLINE SVG ---- */
+        function meepleSVG(color) {
+            return `
+    <svg class="meeple" viewBox="0 0 512 512">
+      <path fill="${color}"
+        d="M256 54.99c-27 0-46.418 14.287-57.633 32.23-10.03 16.047-14.203 34.66-15.017 
+        50.962-30.608 15.135-64.515 30.394-91.815 45.994-14.32 8.183-26.805 16.414-36.203 
+        25.26C45.934 218.28 39 228.24 39 239.99c0 5 2.44 9.075 5.19 12.065 2.754 2.99 
+        6.054 5.312 9.812 7.48 7.515 4.336 16.99 7.95 27.412 11.076 15.483 4.646 
+        32.823 8.1 47.9 9.577-14.996 25.84-34.953 49.574-52.447 72.315C56.65 378.785 
+        39 403.99 39 431.99c0 4-.044 7.123.31 10.26.355 3.137 1.256 7.053 4.41 
+        10.156 3.155 3.104 7.017 3.938 10.163 4.28 3.146.345 6.315.304 
+        10.38.304h111.542c8.097 0 14.026.492 20.125-3.43 6.1-3.92 
+        8.324-9.275 12.67-17.275l.088-.16.08-.166s9.723-19.77 21.324-39.388c5.8-9.808 
+        12.097-19.576 17.574-26.498 2.74-3.46 5.304-6.204 7.15-7.754.564-.472.82-.56 
+        1.184-.76.363.2.62.288 1.184.76 1.846 1.55 4.41 4.294 7.15 7.754 5.477 
+        6.922 11.774 16.69 17.574 26.498 11.6 19.618 21.324 39.387 21.324 
+        39.387l.08.165.088.16c4.346 8 6.55 13.323 12.61 17.254 6.058 3.93 
+        11.974 3.45 19.957 3.45H448c4 0 7.12.043 10.244-.304 
+        3.123-.347 6.998-1.21 10.12-4.332 3.12-3.122 3.984-6.997 
+        4.33-10.12.348-3.122.306-6.244.306-10.244 
+        0-28-17.65-53.205-37.867-79.488-17.493-22.74-37.45-46.474-52.447-72.315 
+        15.077-1.478 32.417-4.93 47.9-9.576 10.422-3.125 
+        19.897-6.74 27.412-11.075 3.758-2.168 7.058-4.49 
+        9.81-7.48 2.753-2.99 5.192-7.065 5.192-12.065 
+        0-11.75-6.934-21.71-16.332-30.554-9.398-8.846-21.883-17.077-36.203-25.26 
+        -27.3-15.6-61.207-30.86-91.815-45.994-.814-16.3-4.988-34.915-15.017-50.96 
+        C302.418 69.276 283 54.99 256 54.99z"/>
+    </svg>`;
+        }
+
+        /* ---- SOUND ENGINE ---- */
+        const sounds = {
+            click: new Audio("sounds/ui-pop-sound-316482.mp3"),
+            score: new Audio("sounds/ui-pop-sound-316482.mp3"),
+            confirm: new Audio("sounds/bell1-445873.mp3"),
+            color: new Audio("sounds/minimalist-button-hover-sound-effect-399749.mp3"),
+            cancel: new Audio("sounds/cancel.mp3"),
+            toggle: new Audio("sounds/toggle.mp3"),
+            open: new Audio("sounds/open.mp3"),
+            remove: new Audio("sounds/remove.mp3"),
+        };
+
+        let soundEnabled = true;
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+
+            document.getElementById("soundState").textContent =
+                soundEnabled ? "On" : "Off";
+
+            document.getElementById("soundIcon").textContent =
+                soundEnabled ? "🔊" : "🔇";
+
+            // Optional feedback click (only when turning ON)
+            if (soundEnabled) {
+                playSound("click", 0.2);
+            }
+        }
+
+
+        function playSound(name, volume = 0.4) {
+            if (!soundEnabled) return;
+
+            const s = sounds[name];
+            if (!s) return;
+
+            s.currentTime = 0;
+            s.volume = volume;
+            s.play().catch(() => { });
+        }
+
+
+
+
+        /* ---- STATE ---- */
+        let players = [];
+        let selectedPlayer = null;
+
+        /* ---- WIDTH SETTINGS ---- */
+        const width = localStorage.getItem("uiWidth") || "900px";
+        document.getElementById("app").style.maxWidth = width;
+
+        function setWidth(w) {
+            document.getElementById("app").style.maxWidth = w;
+            localStorage.setItem("uiWidth", w);
+            document.getElementById("settingsPanel").style.display = "none";
+        }
+
+        /* ---- SETTINGS BUTTON ---- */
+        const settingsBtn = document.getElementById("settingsBtn");
+        const settingsPanel = document.getElementById("settingsPanel");
+
+        settingsBtn.onclick = (e) => {
+            e.stopPropagation(); // 🔑 prevent body click
+            settingsPanel.style.display =
+                settingsPanel.style.display === "block" ? "none" : "block";
+        };
+
+
+        function createPlayer(index) {
+            return {
+                id: crypto.randomUUID(),
+                name: `Player ${index}`,
+                color: COLORS[(index - 1) % COLORS.length],
+                score: 0,
+                tmpScore: 0,
+                history: [],
+                mode: "add"
+            };
+        }
+
+
+        /* ---- PLAYER ACTIONS ---- */
+        function addPlayer() {
+            players.push(createPlayer(players.length + 1));
+            render();
+        }
+
+
+        function togglePlayer(id) {
+            if (selectedPlayer !== null && selectedPlayer !== id) {
+                const prev = players.find(p => p.id === selectedPlayer);
+                if (prev) {
+                    prev.mode = "add";
+                    prev.tmpScore = 0;
+                }
+            }
+
+            const opening = selectedPlayer !== id;
+            selectedPlayer = opening ? id : null;
+
+            render(false);
+
+            if (opening) {
+                scrollPlayerIntoView(id);
+            }
+        }
+
+
+        function flipReorder(container, applyChanges) {
+            const items = Array.from(container.children);
+
+            // F — First
+            const first = new Map();
+            items.forEach(el => {
+                first.set(el, el.getBoundingClientRect());
+            });
+
+            // L — Last (apply DOM changes)
+            applyChanges();
+
+            requestAnimationFrame(() => {
+                const last = new Map();
+                items.forEach(el => {
+                    last.set(el, el.getBoundingClientRect());
+                });
+
+                // I + P
+                items.forEach(el => {
+                    const f = first.get(el);
+                    const l = last.get(el);
+                    if (!f || !l) return;
+
+                    const dx = f.left - l.left;
+                    const dy = f.top - l.top;
+
+                    if (dx || dy) {
+                        el.style.transform = `translate(${dx}px, ${dy}px)`;
+                        el.style.transition = "none";
+
+                        requestAnimationFrame(() => {
+                            el.style.transform = "";
+                            el.style.transition =
+                                "transform 1000ms cubic-bezier(0.22, 1, 0.36, 1)";
+                        });
+                    }
+                });
+            });
+        }
+
+
+        function openEditPlayer(id) {
+            selectedPlayer = id;
+            render(false);
+        }
+
+        function updateTempScore(id, val) {
+            const p = players.find(pl => pl.id === id);
+            p.tmpScore += val;
+            render(false);
+        }
+
+
+        function applyScore(id) {
+            const p = players.find(pl => pl.id === id);
+            if (!p) return;
+
+            if (p.tmpScore !== 0) {
+                p.score += p.tmpScore;
+                p.history.push(p.tmpScore);
+            }
+
+            p.tmpScore = 0;
+            p.mode = "add";
+            selectedPlayer = null;
+
+            if (navigator.vibrate) navigator.vibrate(20);
+
+            render();
+        }
+
+        function applyGameModeUI() {
+            const controls = document.getElementById("controls");
+            const editBtn = document.getElementById("editBtn");
+            const subtitle = document.querySelector(".subtitle");
+
+            if (gameStarted) {
+                controls.style.display = "none";
+                editBtn.style.display = "none";
+                subtitle.style.display = "none";
+                editMode = false;
+                editBtn.classList.remove("active");
+            } else {
+                controls.style.display = "flex";
+                editBtn.style.display = "flex";
+                subtitle.style.display = "block";
+            }
+        }
+
+
+
+        function cancelScore(id) {
+            const p = players.find(pl => pl.id === id);
+            if (!p) return;
+
+            p.tmpScore = 0;
+            p.mode = "add";
+
+            selectedPlayer = null;   // 🔑 THIS is the missing piece
+
+            render(false);
+        }
+
+
+        function resetGame() {
+            if (!confirm("Reset game and remove all players?")) return;
+
+            players = [];
+            selectedPlayer = null;
+
+            localStorage.removeItem("carcassonneState");
+
+            // Default players
+            players.push(createPlayer(1));
+            players.push(createPlayer(2));
+
+            render();
+        }
+
+
+
+        function changeColor(id, col) {
+            const p = players.find(p => p.id === id);
+            if (!p) return;
+            p.color = col;
+            render(false);
+        }
+
+        function changeName(id, name) {
+            const p = players.find(pl => pl.id === id);
+            if (!p) return;
+
+            p.name = name;
+
+            // Update the visible player header text without full render when possible
+            const nameEl = document.querySelector(`.player-header[data-id="${id}"] .player-name`);
+            if (nameEl) nameEl.textContent = name;
+
+            saveState();
+        }
+
+
+        function undoLast(id) {
+            const p = players.find(pl => pl.id === id);
+            if (!p || !p.history.length) return;
+            const last = p.history.pop();
+            p.score -= last;
+            render();
+        }
+
+        function saveState() {
+            localStorage.setItem("carcassonneState", JSON.stringify(players));
+        }
+
+        function loadState() {
+            const s = localStorage.getItem("carcassonneState");
+            if (s) players = JSON.parse(s);
+        }
+
+
+        function toggleMode(id) {
+            const p = players.find(pl => pl.id === id);
+            p.mode = (p.mode === "add" ? "sub" : "add");
+            render(false);
+        }
+
+        function removePlayer(id) {
+            const p = players.find(pl => pl.id === id);
+            if (!p) return;
+
+            if (!confirm(`Are you sure you want to remove "${p.name}"?`)) return;
+
+            players = players.filter(pl => pl.id !== id);
+
+            // Close details if the removed player was open
+            if (selectedPlayer === id) {
+                selectedPlayer = null;
+            }
+
+            render();
+        }
+
+        function resumeSetup() {
+            gameStarted = false;
+            localStorage.setItem("gameStarted", "false");
+            applyGameModeUI();
+            render(false);
+        }
+
+
+        function removePlayer(id) {
+            if (!editMode) return;
+
+            const p = players.find(pl => pl.id === id);
+            if (!p) return;
+
+            if (!confirm(`Remove "${p.name}" from the game?`)) return;
+
+            players = players.filter(pl => pl.id !== id);
+            selectedPlayer = null;
+            render();
+        }
+
+
+        function shadeColor(hex, percent) {
+            let f = parseInt(hex.slice(1), 16),
+                t = percent < 0 ? 0 : 255,
+                p = Math.abs(percent) / 100,
+                R = f >> 16,
+                G = (f >> 8) & 0x00FF,
+                B = f & 0x0000FF;
+
+            return "#" + (
+                0x1000000 +
+                (Math.round((t - R) * p) + R) * 0x10000 +
+                (Math.round((t - G) * p) + G) * 0x100 +
+                (Math.round((t - B) * p) + B)
+            ).toString(16).slice(1);
+        }
+
+
+        /* ---- RENDER ---- */
+        function render(sort = true) {
+            const container = document.getElementById("playersContainer");
+
+            applyGameModeUI();
+
+            flipReorder(container, () => {
+                if (sort) players.sort((a, b) => b.score - a.score);
+
+                players.forEach(p => {
+                    let card = cardMap.get(p.id);
+
+                    if (!card) {
+                        card = document.createElement("div");
+                        card.className = "player-card";
+                        cardMap.set(p.id, card);
+                    }
+
+                    const isOpen = selectedPlayer === p.id;
+                    const isBlackMeeple =
+                        p.color.toLowerCase() === "#1a1a1a" ||
+                        p.color.toLowerCase() === "#000000";
+
+                    card.style.setProperty("--wood-base", shadeColor(p.color, -40));
+                    card.style.setProperty("--wood-dark", shadeColor(p.color, -45));
+
+                    card.classList.toggle("open", isOpen);
+                    card.classList.toggle("black-meeple", isBlackMeeple);
+
+                    const history = p.history.length
+                        ? p.history.map(v => `<span>${v > 0 ? "+" : ""}${v}</span>`).join(" ")
+                        : "<i>No history</i>";
+
+                    card.innerHTML = `
+                <div class="player-header" data-action="toggle" data-id="${p.id}">
+                    <div class="player-name">${p.name}</div>
+                    <div class="score-panel">
+                        ${meepleSVG(p.color)}
+                        <div class="score-value">${p.score}</div>
+                    </div>
+                </div>
+
+                    <div class="details" style="display:${isOpen ? "block" : "none"};">
+
+                        ${editMode ? `
+                            <!-- ========== EDIT MODE ONLY ========== -->
+                            <div class="row">
+                                <div class="chip">
+                                    Name:
+                                    <input value="${p.name}"
+                                        oninput="changeName('${p.id}', this.value)">
+                                </div>
+
+                                <div class="chip">
+                                    Color:
+                                    <div class="color-picker">
+                                        ${COLORS.map(c => `
+                                            <button class="color-swatch ${c === p.color ? "active" : ""}"
+                                                    data-action="color"
+                                                    data-id="${p.id}"
+                                                    data-value="${c}"
+                                                    style="background:${c}">
+                                            </button>
+                                        `).join("")}
+                                    </div>
+                                </div>
+
+                                <div class="row" style="margin-top:12px;">
+                                    <button class="score-btn"
+                                            style="
+                                                background:#991b1b;
+                                                width:100%;
+                                                font-size:14px;
+                                            "
+                                            data-action="remove"
+                                            data-id="${p.id}">
+                                        🗑 Remove Player
+                                    </button>
+                                </div>
+                            </div>
+                        ` : `
+
+                            <!-- ========== PLAY MODE ONLY ========== -->
+                            <div class="row">
+                                <button class="score-btn"
+                                        data-action="mode"
+                                        data-id="${p.id}">
+                                    ${p.mode === "add" ? "➕ Add" : "➖ Sub"}
+                                </button>
+                            </div>
+
+                            <div class="row">
+                                ${[1, 2, 3, 4, 5, 6, 8, 10].map(v => `
+                                    <button class="score-btn score-num"
+                                            data-action="score"
+                                            data-id="${p.id}"
+                                            data-value="${p.mode === "add" ? v : -v}">
+                                        ${v}
+                                    </button>
+                                `).join("")}
+                            </div>
+
+                            <div class="row">
+                                <button class="score-btn score-icon"
+                                        data-action="score"
+                                        data-id="${p.id}"
+                                        data-value="${p.mode === 'add' ? 9 : -9}">
+                                    <img src="images/monastery.png" class="icon-img">
+                                </button>
+                                <button class="score-btn score-icon"
+                                        data-action="score"
+                                        data-id="${p.id}"
+                                        data-value="${p.mode === 'add' ? 2 : -2}">
+                                    <img src="images/city_2.png" class="icon-img">
+                                </button>
+                                <button class="score-btn score-icon"
+                                        data-action="score"
+                                        data-id="${p.id}"
+                                        data-value="${p.mode === 'add' ? 2 : -2}">
+                                    <img src="images/inn_3.jpg" class="icon-img">
+                                </button>
+                                <button class="score-btn score-icon"
+                                        data-action="score"
+                                        data-id="${p.id}"
+                                        data-value="${p.mode === 'add' ? 3 : -3}">
+                                    <img src="images/cathedral_2.jpg" class="icon-img">
+                                </button>
+                            </div>
+
+                            <div class="row" style="justify-content:center;">
+                                <div class="pending-score">
+                                    ${p.tmpScore >= 0 ? "+" : ""}${p.tmpScore}
+                                </div>
+                            </div>
+
+                            <div class="row" style="justify-content:center; gap:16px;">
+                                <button class="score-btn"
+                                        style="background:#166534"
+                                        data-action="apply"
+                                        data-id="${p.id}">
+                                    ✅ Add Score
+                                </button>
+                                <button class="score-btn"
+                                        style="background:#7f1d1d"
+                                        data-action="cancel"
+                                        data-id="${p.id}">
+                                    ✖ Cancel
+                                </button>
+                            </div>
+
+                            <!-- HISTORY -->
+                            <div class="details-divider"></div>
+                            <div class="history-title">History</div>
+                            <div class="row history">
+                                ${history}
+                            </div>
+
+                            <!-- UNDO -->
+                            <button class="score-btn"
+                                    data-action="undo"
+                                    data-id="${p.id}">
+                                ↩ Undo
+                            </button>
+                        `}
+                    </div>
+
+                `;
+                    // 🔑 this MOVES existing nodes
+                    container.appendChild(card);
+                });
+            });
+
+            saveState();
+        }
+
+
+        document.getElementById("playersContainer").addEventListener("click", e => {
+            const el = e.target.closest("[data-action]");
+            if (!el) return;
+
+            const id = el.dataset.id;
+            const action = el.dataset.action;
+            const value = Number(el.dataset.value || 0);
+
+            e.stopPropagation();
+
+            switch (action) {
+                case "toggle":
+                    if (editMode) {
+                        openEditPlayer(id);
+                    } else {
+                        togglePlayer(id);
+                    }
+                    break;
+
+                case "mode":
+                    toggleMode(id);
+                    break;
+
+                case "score":
+                    playSound("score", 0.25);
+                    updateTempScore(id, value);
+                    break;
+
+                case "apply":
+                    playSound("confirm", 0.25);
+                    applyScore(id);
+                    break;
+
+                case "cancel":
+                    cancelScore(id);
+                    break;
+
+                case "remove":
+                    removePlayer(id);
+                    break;
+
+                case "undo":
+                    undoLast(id);
+                    break;
+
+                case "color":
+                    playSound("color", 0.25);
+                    changeColor(id, el.dataset.value);
+                    break;
+            }
+        });
+
+
+        /* INITIAL */
+        loadState();
+
+        if (players.length === 0) {
+            addPlayer();
+            addPlayer();
+        } else {
+            render();
+        }
+        document.getElementById("addPlayerBtn").onclick = addPlayer;
+        document.getElementById("resetBtn").onclick = resetGame;
+
+        document.getElementById("startGameBtn").onclick = () => {
+            if (players.length < 2) {
+                alert("At least 2 players required");
+                return;
+            }
+
+            gameStarted = true;
+            localStorage.setItem("gameStarted", "true");
+
+            render();
+        };
+
+
+        document.body.addEventListener("click", e => {
+            if (!e.target.closest(".player-card")) {
+                if (selectedPlayer !== null) {
+                    const p = players.find(pl => pl.id === selectedPlayer);
+                    if (p) {
+                        p.mode = "add";
+                        p.tmpScore = 0;
+                    }
+                }
+                selectedPlayer = null;
+                render(false);
+            }
+        });
+
+        settingsPanel.addEventListener("click", e => {
+            e.stopPropagation();
+        });
+
+        document.addEventListener("click", () => {
+            if (settingsPanel.style.display === "block") {
+                settingsPanel.style.display = "none";
+            }
+        });
+
+
+    </script>
+</body>
+
+</html>
