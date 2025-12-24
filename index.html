@@ -61,15 +61,18 @@
             background-attachment: fixed;
 
             /* LIGHT MODE (default) */
-            background-image: url("images/bg-light.png");
+            /* background-image: url("images/bg-light.png");
+            transition: background-image 0.99s ease; */
+
+            background-image: var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
 
             transition: background-image 0.99s ease;
         }
 
-        /* DARK MODE BACKGROUND ONLY */
-        body[data-theme="dark"] {
-            background-image: url("images/bg-dark.png");
-        }
 
 
         body::before {
@@ -196,7 +199,7 @@
             font-size: 40px;
             font-weight: 700;
             flex: 1;
-            padding-left: 10px;
+            padding-left: 16px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -205,7 +208,7 @@
         .score-panel {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 20px;
         }
 
         .meeple {
@@ -218,12 +221,13 @@
             font-size: 80px;
             font-weight: 900;
             line-height: 1;
-            padding-right: 10px;
+            padding-right: 16px;
             min-width: 60px;
             text-align: right;
             font-family: "Almendra SC", serif;
             font-weight: 400;
             letter-spacing: 0.02em;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)) saturate(0.95) contrast(1.05);
         }
 
         /* ---- DETAILS ---- */
@@ -659,6 +663,10 @@
         <div class="settings-option" onclick="toggleDarkMode()">
             🌙 Theme: <span id="themeState">Light</span>
         </div>
+        <div class="settings-option" onclick="toggleSeason()">
+            ❄️ Season: <span id="seasonState">Summer</span>
+        </div>
+
         <div class="settings-option" onclick="enterEditMode()">
             ✏️ Edit Players
         </div>
@@ -670,8 +678,39 @@
         let editMode = false;
         let boldScoreStyle = false;
         let gameStarted = false;
+        let season = localStorage.getItem("season") || "summer";
+
 
         gameStarted = localStorage.getItem("gameStarted") === "true";
+
+        function applyBackground() {
+            const isDark = document.body.dataset.theme === "dark";
+
+            let img;
+
+            if (season === "winter") {
+                img = isDark
+                    ? "images/bg-dark-winter.png"
+                    : "images/bg-light-winter.png";
+            } else {
+                img = isDark
+                    ? "images/bg-dark.png"
+                    : "images/bg-light.png";
+            }
+
+            document.body.style.setProperty("--bg-image", `url("${img}")`);
+        }
+
+
+        function toggleSeason() {
+            season = season === "summer" ? "winter" : "summer";
+
+            document.getElementById("seasonState").textContent =
+                season === "summer" ? "Summer" : "Winter";
+
+            localStorage.setItem("season", season);
+            applyBackground();
+        }
 
 
         function toggleScoreStyle() {
@@ -730,14 +769,6 @@
         }
 
 
-        function toggleDarkMode() {
-            darkMode = !darkMode;
-
-            document.body.dataset.theme = darkMode ? "dark" : "light";
-            document.getElementById("themeState").textContent =
-                darkMode ? "Dark" : "Light";
-        }
-
         // Load on startup
         const savedTheme = localStorage.getItem("theme");
         if (savedTheme === "dark") {
@@ -754,7 +785,10 @@
                 darkMode ? "Dark" : "Light";
 
             localStorage.setItem("theme", darkMode ? "dark" : "light");
+
+            applyBackground(); // 🔑 THIS WAS MISSING
         }
+
 
 
         /* ---- COLOR SET ---- */
@@ -1387,6 +1421,12 @@
             render();
         };
 
+        document.body.dataset.theme = darkMode ? "dark" : "light";
+        applyBackground();
+
+        document.getElementById("seasonState").textContent =
+            season === "summer" ? "Summer" : "Winter";
+
 
         document.body.addEventListener("click", e => {
             if (!e.target.closest(".player-card")) {
@@ -1418,4 +1458,3 @@
 
 
 </html>
-
