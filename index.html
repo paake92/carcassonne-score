@@ -196,10 +196,10 @@
 
 
         .player-name {
-            font-size: 40px;
+            font-size: 46px;
             font-weight: 700;
             flex: 1;
-            padding-left: 16px;
+            padding-left: 18px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -208,7 +208,7 @@
         .score-panel {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 22px;
         }
 
         .meeple {
@@ -218,10 +218,10 @@
         }
 
         .score-value {
-            font-size: 80px;
+            font-size: 82px;
             font-weight: 900;
             line-height: 1;
-            padding-right: 16px;
+            padding-right: 18px;
             min-width: 60px;
             text-align: right;
             font-family: "Almendra SC", serif;
@@ -1304,7 +1304,7 @@
                                     </div>
 
                                     <div class="row">
-                                        ${[1, 2, 3, 4, 5, 6, 8, 10].map(v => `
+                                        ${Array.from({ length: 10 }, (_, i) => i + 1).map(v => `
                                             <button class="score-btn score-num"
                                                     data-action="score"
                                                     data-id="${p.id}"
