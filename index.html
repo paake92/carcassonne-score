@@ -1096,14 +1096,23 @@
             players = [];
             selectedPlayer = null;
 
-            localStorage.removeItem("carcassonneState");
+            cardMap.clear();
+            document.getElementById("playersContainer").innerHTML = "";
 
-            // Default players
+            localStorage.removeItem("carcassonneState");
+            localStorage.setItem("gameStarted", "false");
+            gameStarted = false;
+
+            editMode = false;
+            editBtn.classList.remove("active");
+
             players.push(createPlayer(1));
             players.push(createPlayer(2));
 
             render();
         }
+
+
 
 
 
@@ -1150,22 +1159,6 @@
             const p = players.find(pl => pl.id === id);
             p.mode = (p.mode === "add" ? "sub" : "add");
             render(false);
-        }
-
-        function removePlayer(id) {
-            const p = players.find(pl => pl.id === id);
-            if (!p) return;
-
-            if (!confirm(`Are you sure you want to remove "${p.name}"?`)) return;
-
-            players = players.filter(pl => pl.id !== id);
-
-            // Close details if the removed player was open
-            if (selectedPlayer === id) {
-                selectedPlayer = null;
-            }
-
-            render();
         }
 
         function resumeSetup() {
