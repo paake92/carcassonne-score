@@ -394,19 +394,6 @@
             /* 🔑 constrain width */
         }
 
-
-        .color-swatch {
-            width: 12px;
-            height: 12px;
-            /* border-radius: 50%; */
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-
-        .color-swatch.active {
-            border-color: white;
-        }
-
         /* black meeple exception */
         .black-meeple .meeple {
             filter:
@@ -454,20 +441,61 @@
    DARK MODE – BASIC UI
    ========================= */
 
-        body[data-theme="dark"] .subtitle {
-            color: rgba(255, 255, 255, 0.7);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        /* =========================
+   DARK MODE
+   ========================= */
+
+        body[data-theme="dark"] .details .chip {
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 2px 6px rgba(0, 0, 0, 0.4);
         }
 
-        body[data-theme="dark"] #controls button {
-            background: #1e293b;
-            /* dark slate */
-            border-color: #334155;
-            color: #e5e7eb;
+        body[data-theme="dark"] .details .chip input:focus {
+            box-shadow: 0 0 0 1px #38bdf8;
         }
 
-        body[data-theme="dark"] #controls button:hover {
-            background: #334155;
+        body[data-theme="dark"] .details .chip input {
+            color: var(--edit-text);
+        }
+
+        body[data-theme="dark"] .details .chip input::placeholder {
+            color: rgba(229, 231, 235, 0.6);
+        }
+
+        body[data-theme="dark"] .details .color-picker {
+            background: transparent;
+            /* keep clean */
+        }
+
+        body[data-theme="dark"] .details .color-swatch {
+            border-color: #475569;
+        }
+
+        body[data-theme="dark"] .details .color-swatch.active {
+            border-color: #e5e7eb;
+            box-shadow: 0 0 0 1px rgba(229, 231, 235, 0.6);
+        }
+
+        /* =========================
+   DARK MODE – BUTTON TOKENS
+   ========================= */
+        body[data-theme="dark"] {
+            --btn-bg: #1e293b;
+            --btn-border: #475569;
+            --btn-hover: #334155;
+
+            --text-main: #e5e7eb;
+            --text-soft: #94a3b8;
+        }
+
+        body[data-theme="dark"] #startGameBtn {
+            background: #2563eb;
+            border-color: #3b82f6;
+        }
+
+        body[data-theme="dark"] #startGameBtn:hover {
+            background: #1d4ed8;
         }
 
 
@@ -638,13 +666,13 @@
         }
 
         .scoring-right .pending-score {
-            @media (max-width: 520px) {
-                .scoring-grid {
-                    grid-template-columns: 1fr;
-                }
-            }
-
             margin: 0;
+        }
+
+        @media (max-width: 520px) {
+            .scoring-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
