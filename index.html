@@ -786,18 +786,26 @@
         }
 
         function scrollPlayerIntoView(id) {
-            requestAnimationFrame(() => {
-                const card = document.querySelector(`.player-header[data-id="${id}"]`)
-                    ?.closest(".player-card");
+            // wait for render + FLIP
+            setTimeout(() => {
+                const card = document.querySelector(
+                    `.player-header[data-id="${id}"]`
+                )?.closest(".player-card");
 
                 if (!card) return;
 
-                card.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
+                const y =
+                    card.getBoundingClientRect().top +
+                    window.scrollY -
+                    16; // top padding offset
+
+                window.scrollTo({
+                    top: y,
+                    behavior: "smooth"
                 });
-            });
+            }, 120); // must be > FLIP duration
         }
+
 
 
         // Load on startup
